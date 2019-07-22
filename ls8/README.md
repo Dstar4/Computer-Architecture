@@ -62,7 +62,8 @@ but you'll have to implement those three above instructions first!
 * Make a list of files here.
 * Write a short 3-10-word description of what each file does.
 
-- cpu.py Main CPU class. Alu, load, traceotep
+- cpu.py Main CPU class. Methods: alu, load, trace, run
+- ls8.py Import cpu. Load and run cpu.
 
 * Note what has been implemented, and what hasn't.
 * Read this whole file.
