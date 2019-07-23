@@ -135,3 +135,45 @@ int y = 012; // octal, decimal value 10!
 ```
 
 Don't pad decimal numbers with leading zeros
+
+---
+
+ A  B    A and B
+ ---------------
+ 0  0       0
+ 0  1       1
+ 1  0       0
+ 1  1       1
+
+ A  B    A XOR B
+ ---------------
+ 0  0       0
+ 0  1       1
+ 1  0       1
+ 1  1       0
+
+
+
+  1101011
+& 1010010
+ ---------
+  1000010
+
+    Boolean     Bitwise
+OR    or           |
+AND   and          &
+XOR   n/a          ^
+NOT   not          ~
+
+And Masking
+
+  101010101
+& 111100000
+-------------
+  10100000
+
+We want **
+  **
+7635463
+0035000
+0000035

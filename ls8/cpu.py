@@ -8,9 +8,9 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        individual = 00000000
-        ram = [[0]*8] * 8
-        pc = 0
+        self.pc = 0
+        self.ram = [0] * 256
+        self.reg = [0] * 8
 
     def load(self):
         """Load a program into memory."""
@@ -42,6 +42,14 @@ class CPU:
         else:
             raise Exception("Unsupported ALU operation")
 
+    # MAR - Memory Address Register
+    def ram_read(self, MAR):
+        return self.ram[MAR]
+
+    # MDR - Memory Data Register
+    def ram_write(self, MAR, MDR):
+        self.ram[MAR] = MDR
+
     def trace(self):
         """
         Handy function to print out the CPU state. You might want to call this
@@ -59,20 +67,26 @@ class CPU:
 
         for i in range(8):
             print(" %02X" % self.reg[i], end='')
-
         print()
 
     def run(self):
         """Run the CPU."""
-        for instruction in self.program:
-            self.ram[address] = instruction
-            address += 1
+        running = True
+        while running:
+            curr_reg = self.ram[self.pc]
+            opt_a = self.ram[self.pc + 1]
+            opt_b = self.ram[self.pc + 2]
+            if curr_reg == 0b00000001:              # HLT - Halt
+                running = False
+                self.pc += 1
 
-    # MAR - Memory Address Register
+            elif curr_reg == 0b10000010:            # LDI - Set value of a register to an int
+                self.reg[opt_a] = opt_b
+                self.pc += 3
 
-    def ram_read(self, MAR):
-        print(self.register[MAR])
-
-    # MDR - Memory Data Register
-    def ram_write(self, MAR, MDR):
-        self.register[MAR] = MDR
+            elif curr_reg == 0b01000111:            # PRN - Print numeric value stored in the given register
+                print(self.reg[opt_a])
+                self.pc += 2
+            else:
+                print(f'Unknown command {curr_reg}')
+                sys.exit(1)
