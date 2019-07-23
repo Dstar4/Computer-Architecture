@@ -6,21 +6,31 @@ PRINT_NUM = 3
 SAVE_REGISTER = 4
 PRINT_REGISTER = 5
 
-memory = [
-    PRINT_DANIEL,
-    SAVE_REGISTER,
-    177,     # store 77
-    2,      # store in register 2
-    PRINT_REGISTER,
-    2,
-    HALT,
-]
-
+memory = [0]*128
 register = [0] * 8      # 8 registers
-
 pc = 0  # Program Counter, points to currently-executing instruction
 
 running = True
+if len(sys.argv) != 2:
+    print(f"usage:{sys.argv[0]} filename")
+    sys.exit(1)
+
+try:
+    with open(sys.argv[1]) as f:
+        address = 0
+
+        for line in f:
+            num = line.split("#", 1)[0]
+
+            if num.strip() == "":   # ignore comment-only lines
+                continue
+
+            memory[address] = int(num)
+            address += 1
+
+except FileNotFoundError:
+    print(f"{sys.argv[0]}: {sys.argv[1]} not found")
+    sys.exit(2)
 
 while running:
     command = memory[pc]

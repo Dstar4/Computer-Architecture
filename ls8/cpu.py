@@ -12,26 +12,25 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
 
-    def load(self):
+    def load(self, file):
         """Load a program into memory."""
-
         address = 0
+        program = []
 
-        # For now, we've just hardcoded a program:
+        try:
+            with open(file) as f:
+                for line in f:
+                    instruction = line.split("#", 1)[0].strip()
+                    if len(instruction):
+                        program.append(int(instruction, 2))
 
-        program = [
-            # From print8.ls8
-            0b10000010,  # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111,  # PRN R0
-            0b00000000,
-            0b00000001,  # HLT
-        ]
+            for instruction in program:
+                self.ram[address] = instruction
+                address += 1
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        except FileNotFoundError:
+            print(f"{sys.argv[0]}: {sys.argv[1]} not found")
+            sys.exit(2)
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -72,19 +71,26 @@ class CPU:
     def run(self):
         """Run the CPU."""
         running = True
+
         while running:
+            # self.trace()
             curr_reg = self.ram[self.pc]
+
+            # print(self.ram[curr_reg])
             opt_a = self.ram[self.pc + 1]
             opt_b = self.ram[self.pc + 2]
-            if curr_reg == 0b00000001:              # HLT - Halt
+            if curr_reg == 0b00000001:
+                # print("HLT")              # HLT - Halt
                 running = False
-                self.pc += 1
 
             elif curr_reg == 0b10000010:            # LDI - Set value of a register to an int
+                # print("LDI")
                 self.reg[opt_a] = opt_b
                 self.pc += 3
+                # print(self.pc)
 
             elif curr_reg == 0b01000111:            # PRN - Print numeric value stored in the given register
+                # print("PRN")
                 print(self.reg[opt_a])
                 self.pc += 2
             else:
