@@ -38,6 +38,10 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         # elif op == "SUB": etc
+
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+        # elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -80,7 +84,7 @@ class CPU:
             opt_a = self.ram[self.pc + 1]
             opt_b = self.ram[self.pc + 2]
             if curr_reg == 0b00000001:
-                # print("HLT")              # HLT - Halt
+                # print("HLT")                      # HLT - Halt
                 running = False
 
             elif curr_reg == 0b10000010:            # LDI - Set value of a register to an int
@@ -93,6 +97,11 @@ class CPU:
                 # print("PRN")
                 print(self.reg[opt_a])
                 self.pc += 2
+            elif curr_reg == 0b10100010:            # MUL - Multiply register 0 and register 1
+                # print("MUL")
+                self.alu("MUL", opt_a, opt_b)
+                self.pc += 3
+
             else:
                 print(f'Unknown command {curr_reg}')
                 sys.exit(1)
