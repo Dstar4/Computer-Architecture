@@ -77,7 +77,7 @@ class CPU:
         running = True
 
         while running:
-            # self.trace()
+            self.trace()
             curr_reg = self.ram[self.pc]
 
             # print(self.ram[curr_reg])

@@ -56,6 +56,11 @@ while running:
         regnum = memory[pc+1]
         print(register[regnum])
         pc += 2
+    elif command == PUSH:
+        registers[SP] -= 1              # decrement SP
+        regnum = memory[pc + 1]         # get the register number operand
+        value = registers[regnum]       # get the value from that register
+        memory[registers[SP]] = value   # store that value in memory at the SP
 
     else:
         print(f"unknown instruction {command}")
