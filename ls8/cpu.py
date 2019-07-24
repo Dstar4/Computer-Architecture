@@ -2,6 +2,11 @@
 
 import sys
 
+ADD = 0b10100000
+MUL = 0b10100010
+LDI = 0b10000010
+PRN = 0b01000111
+
 
 class CPU:
     """Main CPU class."""
@@ -11,6 +16,23 @@ class CPU:
         self.pc = 0
         self.ram = [0] * 256
         self.reg = [0] * 8
+        self.branchtable = {
+            PRN: self.handle_PRN,
+            LDI: self.handle_LDI,
+            MUL: self.handle_MUL
+        }
+
+    def handle_PRN(self, a, b):
+        print(self.reg[a])
+        self.pc += 2
+
+    def handle_LDI(self, a, b):
+        self.reg[a] = b
+        self.pc += 3
+
+    def handle_MUL(self, a, b):
+        self.alu("MUL", a, b)
+        self.pc += 3
 
     def load(self, file):
         """Load a program into memory."""
@@ -37,11 +59,10 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        # elif op == "SUB": etc
 
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
-        # elif op == "SUB": etc
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -78,30 +99,16 @@ class CPU:
 
         while running:
             self.trace()
-            curr_reg = self.ram[self.pc]
+            ir = self.ram[self.pc]
 
-            # print(self.ram[curr_reg])
-            opt_a = self.ram[self.pc + 1]
-            opt_b = self.ram[self.pc + 2]
-            if curr_reg == 0b00000001:
-                # print("HLT")                      # HLT - Halt
+            opt_a = self.ram_read(self.pc + 1)
+            opt_b = self.ram_read(self.pc + 2)
+
+            if ir in self.branchtable:
+                self.branchtable[ir](opt_a, opt_b)
+
+            elif ir == 0b00000001:
                 running = False
 
-            elif curr_reg == 0b10000010:            # LDI - Set value of a register to an int
-                # print("LDI")
-                self.reg[opt_a] = opt_b
-                self.pc += 3
-                # print(self.pc)
-
-            elif curr_reg == 0b01000111:            # PRN - Print numeric value stored in the given register
-                # print("PRN")
-                print(self.reg[opt_a])
-                self.pc += 2
-            elif curr_reg == 0b10100010:            # MUL - Multiply register 0 and register 1
-                # print("MUL")
-                self.alu("MUL", opt_a, opt_b)
-                self.pc += 3
-
             else:
-                print(f'Unknown command {curr_reg}')
-                sys.exit(1)
+                raise Exception(f'Unknown instruction {self.pc}   {ir}')
