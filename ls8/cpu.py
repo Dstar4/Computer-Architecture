@@ -1,11 +1,5 @@
 """CPU functionality."""
-
 import sys
-
-ADD = 0b10100000
-MUL = 0b10100010
-LDI = 0b10000010
-PRN = 0b01000111
 
 
 class CPU:
@@ -16,23 +10,23 @@ class CPU:
         self.pc = 0
         self.ram = [0] * 256
         self.reg = [0] * 8
-        self.branchtable = {
-            PRN: self.handle_PRN,
-            LDI: self.handle_LDI,
-            MUL: self.handle_MUL
-        }
+        self.reg[7] = 0xf4
 
-    def handle_PRN(self, a, b):
-        print(self.reg[a])
-        self.pc += 2
+    @property
+    def sp(self):
+        return self.reg[7]
 
-    def handle_LDI(self, a, b):
-        self.reg[a] = b
-        self.pc += 3
+    @sp.setter
+    def sp(self, value):
+        self.reg[7] = value
 
-    def handle_MUL(self, a, b):
-        self.alu("MUL", a, b)
-        self.pc += 3
+    # MAR - Memory Address Register
+    def ram_read(self, MAR):
+        return self.ram[MAR]
+
+    # MDR - Memory Data Register
+    def ram_write(self, MAR, MDR):
+        self.ram[MAR] = MDR
 
     def load(self, file):
         """Load a program into memory."""
@@ -66,14 +60,6 @@ class CPU:
         else:
             raise Exception("Unsupported ALU operation")
 
-    # MAR - Memory Address Register
-    def ram_read(self, MAR):
-        return self.ram[MAR]
-
-    # MDR - Memory Data Register
-    def ram_write(self, MAR, MDR):
-        self.ram[MAR] = MDR
-
     def trace(self):
         """
         Handy function to print out the CPU state. You might want to call this
@@ -95,20 +81,44 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        running = True
+        self.running = True
 
-        while running:
-            self.trace()
+        def HTL():
+            self.running = False
+
+        def LDI():
+            self.reg[op_a] = op_b
+
+        def POP():
+            self.reg[op_a] = self.ram[self.sp]
+            self.sp += 1
+
+        def PUSH():
+            self.sp -= 1
+            self.ram[self.sp] = self.reg[op_a]
+
+        def ST():
+            self.ram[op_a] = self.reg[op_b]
+
+        branch_table = {
+            0b10100000: lambda: self.alu("ADD", op_a, op_b),
+            0b10000010: LDI,
+            0b10100010: lambda: self.alu("MUL", op_a, op_b),
+            0b01000110: POP,
+            0b01000111: lambda: print(self.reg[op_a]),
+            0b01000101: PUSH,
+            0b10000100: ST,
+        }
+
+        while self.running:
             ir = self.ram[self.pc]
-
-            opt_a = self.ram_read(self.pc + 1)
-            opt_b = self.ram_read(self.pc + 2)
-
-            if ir in self.branchtable:
-                self.branchtable[ir](opt_a, opt_b)
-
-            elif ir == 0b00000001:
-                running = False
-
-            else:
-                raise Exception(f'Unknown instruction {self.pc}   {ir}')
+            op_count = (ir & 0b11000000) >> 6
+            sets_pc = (ir & 0b00010000) >> 4
+            op_a = self.ram[self.pc + 1]
+            op_b = self.ram[self.pc + 2]
+            cmd = branch_table.get(ir)
+            if not cmd:
+                sys.exit(f'Cannot understand instruction: {ir:0b}')
+            cmd()
+            if not sets_pc:
+                self.pc += (op_count + 1)
