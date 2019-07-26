@@ -11,6 +11,7 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.reg[7] = 0xf4
+        self.FL = 0
 
     @property
     def sp(self):
@@ -57,6 +58,19 @@ class CPU:
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
 
+        elif op == "CMP":
+            print("here cmp")
+            print(self.pc)
+            self.pc += 3
+            print(self.pc)
+
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.fl = 1
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.FL = 2
+            else:
+                self.FL = 4
+            # print("here end")
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -83,10 +97,11 @@ class CPU:
         """Run the CPU."""
         self.running = True
 
-        def HTL():
+        def HLT():
             self.running = False
 
         def LDI():
+            print("here LDI")
             self.reg[op_a] = op_b
 
         def POP():
@@ -109,6 +124,22 @@ class CPU:
             self.pc = self.ram[self.sp]
             self.sp += 1
 
+        def JEQ():
+            print("here jeq")
+            if self.FL == 0b00000001:
+                self.JMP()
+            else:
+                self.pc += 2
+
+        def JNE():
+            if self.FL != 1:
+                self.JMP()
+
+        def JMP():
+            ra = self.ram_read(self.pc+1)
+            rv = self.reg[ra]
+            self.pc = rv
+
         branch_table = {
             0b10100000: lambda: self.alu("ADD", op_a, op_b),
             0b10000010: LDI,
@@ -119,6 +150,10 @@ class CPU:
             0b10000100: ST,
             0b01010000: CALL,
             0b00010001: RET,
+            0b10100111: lambda: self.alu("CMP", op_a, op_b),
+            0b01010100: JMP,
+            0b01010101: JEQ,
+            0b01010110: JNE,
 
         }
 
