@@ -59,21 +59,27 @@ class CPU:
             self.reg[reg_a] *= self.reg[reg_b]
 
         elif op == "CMP":
-            # print("here cmp")
-            # print(self.pc)
+            # FL bits: 00000LGE
+            # L Less-than: during a CMP, set to 1 if registerA is less than registerB, zero otherwise.
+            # G Greater-than: during a CMP, set to 1 if registerA is greater than registerB, zero otherwise.
+            # E Equal: during a CMP, set to 1 if registerA is equal to registerB, zero otherwise.
 
-            # print(self.pc)
+            # print("here cmp")
             result = self.reg[reg_a] - self.reg[reg_b]
-            # `FL` bits: `00000LGE`
             if result == 0:  # reg_a == reg_b
-                self.fl = 0b00000001
-            elif result < 0:  # reg_a < reg_b
-                self.fl = 0b00000100
-            else:  # reg_a > reg_b
-                self.fl = 0b00000010
+                self.FL = 0b00000001
+            else:
+                self.FL = 0b00000000
 
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+
+        elif op == "AND":
+            self.reg[reg_a] &= self.reg[reg_b]
+
+        elif op == "OR":
+            self.reg[reg_a] |= self.reg[reg_b]
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -128,27 +134,26 @@ class CPU:
             self.sp += 1
 
         def JEQ():
-            print("here jeq")
+            # print("here jeq")
             if self.FL == 0b00000001:
-                ra = self.ram_read(self.pc+1)
+                ra = self.ram[self.pc+1]
                 rv = self.reg[ra]
                 self.pc = rv
             else:
                 self.pc += 2
 
         def JNE():
-            print("JNE")
-            # self.pc = self.reg[a]
-            if self.FL != 1:
-                ra = self.ram_read(self.pc+1)
-                rv = self.reg[ra]
-                self.pc = rv
+            # print("JNE")
+            equal = self.FL & 0b00000001
+            if equal == 0b00000000:
+                ra = self.ram[self.pc+1]
+                self.pc = self.reg[ra]
+            else:
+                self.pc += 2
 
         def JMP():
-            print("JMP")
-            ra = self.ram_read(self.pc+1)
-            rv = self.reg[ra]
-            self.pc = rv
+            ra = self.ram[self.pc+1]
+            self.pc = self.reg[ra]
 
         branch_table = {
             0b10100000: lambda: self.alu("ADD", op_a, op_b),
@@ -164,22 +169,20 @@ class CPU:
             0b01010100: JMP,
             0b01010101: JEQ,
             0b01010110: JNE,
-
+            0b10101000: lambda: self.alu("AND", op_a, op_b),
+            0b10101010: lambda: self.alu("OR", op_a, op_b),
         }
 
         while self.running:
             # self.trace()
             ir = self.ram[self.pc]
             op_count = (ir & 0b11000000) >> 6
-
             sets_pc = (ir & 0b00010000) >> 4
             op_a = self.ram[self.pc + 1]
             op_b = self.ram[self.pc + 2]
-
             cmd = branch_table.get(ir)
-
             if not cmd:
-                sys.exit(f'Halted')
+                sys.exit(f'End Program')
             cmd()
             if not sets_pc:
                 self.pc += (op_count + 1)
