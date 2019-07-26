@@ -100,6 +100,15 @@ class CPU:
         def ST():
             self.ram[op_a] = self.reg[op_b]
 
+        def CALL():
+            self.sp -= 1
+            self.ram[self.sp] = self.ram[self.pc + 1]
+            self.pc = self.reg[op_a]
+
+        def RET():
+            self.pc = self.ram[self.sp]
+            self.sp += 1
+
         branch_table = {
             0b10100000: lambda: self.alu("ADD", op_a, op_b),
             0b10000010: LDI,
@@ -108,15 +117,22 @@ class CPU:
             0b01000111: lambda: print(self.reg[op_a]),
             0b01000101: PUSH,
             0b10000100: ST,
+            0b01010000: CALL,
+            0b00010001: RET,
+
         }
 
         while self.running:
+            self.trace()
             ir = self.ram[self.pc]
             op_count = (ir & 0b11000000) >> 6
+
             sets_pc = (ir & 0b00010000) >> 4
             op_a = self.ram[self.pc + 1]
             op_b = self.ram[self.pc + 2]
+
             cmd = branch_table.get(ir)
+
             if not cmd:
                 sys.exit(f'Cannot understand instruction: {ir:0b}')
             cmd()
