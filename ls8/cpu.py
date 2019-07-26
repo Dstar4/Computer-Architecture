@@ -144,8 +144,7 @@ class CPU:
 
         def JNE():
             # print("JNE")
-            equal = self.FL & 0b00000001
-            if equal == 0b00000000:
+            if self.FL == 0b00000000:
                 ra = self.ram[self.pc+1]
                 self.pc = self.reg[ra]
             else:
