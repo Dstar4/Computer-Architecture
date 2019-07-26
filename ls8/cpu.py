@@ -11,7 +11,7 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.reg[7] = 0xf4
-        self.FL = 0
+        self.FL = 0b00000000  # Flags
 
     @property
     def sp(self):
@@ -59,18 +59,21 @@ class CPU:
             self.reg[reg_a] *= self.reg[reg_b]
 
         elif op == "CMP":
-            print("here cmp")
-            print(self.pc)
-            self.pc += 3
-            print(self.pc)
+            # print("here cmp")
+            # print(self.pc)
 
-            if self.reg[reg_a] == self.reg[reg_b]:
-                self.fl = 1
-            elif self.reg[reg_a] > self.reg[reg_b]:
-                self.FL = 2
-            else:
-                self.FL = 4
-            # print("here end")
+            # print(self.pc)
+            result = self.reg[reg_a] - self.reg[reg_b]
+            # `FL` bits: `00000LGE`
+            if result == 0:  # reg_a == reg_b
+                self.fl = 0b00000001
+            elif result < 0:  # reg_a < reg_b
+                self.fl = 0b00000100
+            else:  # reg_a > reg_b
+                self.fl = 0b00000010
+
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -101,7 +104,7 @@ class CPU:
             self.running = False
 
         def LDI():
-            print("here LDI")
+            # print("here LDI")
             self.reg[op_a] = op_b
 
         def POP():
@@ -127,15 +130,22 @@ class CPU:
         def JEQ():
             print("here jeq")
             if self.FL == 0b00000001:
-                self.JMP()
+                ra = self.ram_read(self.pc+1)
+                rv = self.reg[ra]
+                self.pc = rv
             else:
                 self.pc += 2
 
         def JNE():
+            print("JNE")
+            # self.pc = self.reg[a]
             if self.FL != 1:
-                self.JMP()
+                ra = self.ram_read(self.pc+1)
+                rv = self.reg[ra]
+                self.pc = rv
 
         def JMP():
+            print("JMP")
             ra = self.ram_read(self.pc+1)
             rv = self.reg[ra]
             self.pc = rv
@@ -158,7 +168,7 @@ class CPU:
         }
 
         while self.running:
-            self.trace()
+            # self.trace()
             ir = self.ram[self.pc]
             op_count = (ir & 0b11000000) >> 6
 
@@ -169,7 +179,7 @@ class CPU:
             cmd = branch_table.get(ir)
 
             if not cmd:
-                sys.exit(f'Cannot understand instruction: {ir:0b}')
+                sys.exit(f'Halted')
             cmd()
             if not sets_pc:
                 self.pc += (op_count + 1)
